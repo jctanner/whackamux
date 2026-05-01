@@ -4,6 +4,8 @@ Whack-a-mole for tmux. A desktop dashboard for monitoring and interacting with t
 
 ![Rust](https://img.shields.io/badge/rust-stable-orange) ![License](https://img.shields.io/badge/license-MIT-blue)
 
+![whackamux screenshot](assets/screenshot.png)
+
 ## What it does
 
 - Displays a tiled grid of all your tmux windows and panes across local and remote hosts
