@@ -1,6 +1,6 @@
 # whackamux
 
-A desktop dashboard for monitoring and interacting with tmux sessions across multiple machines. Built for the workflow of running many long-lived processes (CI jobs, AI coding agents, builds) in tmux and needing to spot which ones need attention.
+Whack-a-mole for tmux. A desktop dashboard for monitoring and interacting with tmux sessions across multiple machines. Panes that need attention light up red — whack them with a quick response and move on.
 
 ![Rust](https://img.shields.io/badge/rust-stable-orange) ![License](https://img.shields.io/badge/license-MIT-blue)
 
