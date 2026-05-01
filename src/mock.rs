@@ -1,0 +1,254 @@
+use crate::pane::{PaneGeometry, PaneInfo, PaneStatus, WindowInfo};
+
+pub fn mock_windows() -> Vec<WindowInfo> {
+    vec![
+        // server1: "claude" session, window 0 "agent" — single pane
+        WindowInfo {
+            id: "@0".into(),
+            host: "server1".into(),
+            session: "claude".into(),
+            window_index: 0,
+            window_name: "agent".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%0".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 200, height: 50 },
+                    status: PaneStatus::NeedsAttention,
+                    content: vec![
+                        "$ claude".into(),
+                        "".into(),
+                        "I'll update the authentication module to use".into(),
+                        "the new token format.".into(),
+                        "".into(),
+                        "  Do you want to proceed? (y/n)".into(),
+                        "".into(),
+                    ],
+                },
+            ],
+        },
+        // server1: "claude" session, window 1 "build" — vertical split (2 panes side by side)
+        WindowInfo {
+            id: "@1".into(),
+            host: "server1".into(),
+            session: "claude".into(),
+            window_index: 1,
+            window_name: "build".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%1".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 99, height: 50 },
+                    status: PaneStatus::Active,
+                    content: vec![
+                        "$ cargo build --release".into(),
+                        "   Compiling serde v1.0.210".into(),
+                        "   Compiling tokio v1.40.0".into(),
+                        "   Compiling tmux-watcher v0.1.0".into(),
+                        "    Finished release [optimized]".into(),
+                        "$ ".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%2".into(),
+                    index: 1,
+                    geometry: PaneGeometry { left: 100, top: 0, width: 100, height: 50 },
+                    status: PaneStatus::Idle,
+                    content: vec![
+                        "$ cargo test".into(),
+                        "running 12 tests".into(),
+                        "test config::test_load ... ok".into(),
+                        "test pane::test_strip_ansi ... ok".into(),
+                        "test ssh::test_connect ... ok".into(),
+                        "".into(),
+                        "test result: ok. 12 passed".into(),
+                        "$ ".into(),
+                    ],
+                },
+            ],
+        },
+        // desktop: "dev" session, window 0 "code" — 3-pane layout (left big, right split top/bottom)
+        WindowInfo {
+            id: "@5".into(),
+            host: "desktop".into(),
+            session: "dev".into(),
+            window_index: 0,
+            window_name: "code".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%5".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 130, height: 50 },
+                    status: PaneStatus::NeedsAttention,
+                    content: vec![
+                        "$ claude".into(),
+                        "".into(),
+                        "I need to edit src/main.rs and src/lib.rs".into(),
+                        "to refactor the error handling.".into(),
+                        "".into(),
+                        "  Allow claude to edit 2 files? (yes/no)".into(),
+                        "".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%6".into(),
+                    index: 1,
+                    geometry: PaneGeometry { left: 131, top: 0, width: 69, height: 24 },
+                    status: PaneStatus::Idle,
+                    content: vec![
+                        "$ git log --oneline -5".into(),
+                        "a1b2c3d fix: auth token expiry".into(),
+                        "e4f5g6h feat: add retry logic".into(),
+                        "i7j8k9l refactor: split config".into(),
+                        "m0n1o2p docs: update README".into(),
+                        "$ ".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%7".into(),
+                    index: 2,
+                    geometry: PaneGeometry { left: 131, top: 25, width: 69, height: 25 },
+                    status: PaneStatus::Active,
+                    content: vec![
+                        "$ watch -n2 'curl -s localhost:8080/health'".into(),
+                        "{\"status\":\"ok\",\"uptime\":3842}".into(),
+                        "".into(),
+                        "Every 2s: curl -s localhost:8080/health".into(),
+                    ],
+                },
+            ],
+        },
+        // desktop: "dev" session, window 1 "logs" — horizontal split (top/bottom)
+        WindowInfo {
+            id: "@6".into(),
+            host: "desktop".into(),
+            session: "dev".into(),
+            window_index: 1,
+            window_name: "logs".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%8".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 200, height: 24 },
+                    status: PaneStatus::Active,
+                    content: vec![
+                        "$ tail -f /var/log/app/server.log".into(),
+                        "2026-05-01 12:34:01 INFO  request GET /api/users".into(),
+                        "2026-05-01 12:34:02 INFO  response 200 12ms".into(),
+                        "2026-05-01 12:34:05 WARN  slow query: 450ms".into(),
+                        "2026-05-01 12:34:06 INFO  request POST /api/auth".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%9".into(),
+                    index: 1,
+                    geometry: PaneGeometry { left: 0, top: 25, width: 200, height: 25 },
+                    status: PaneStatus::Idle,
+                    content: vec![
+                        "$ tail -f /var/log/app/errors.log".into(),
+                        "2026-05-01 11:22:33 ERROR connection pool exhausted".into(),
+                        "2026-05-01 11:45:12 ERROR timeout: upstream /svc/auth".into(),
+                        "".into(),
+                    ],
+                },
+            ],
+        },
+        // laptop: "work" session, window 0 "main" — single pane
+        WindowInfo {
+            id: "@10".into(),
+            host: "laptop".into(),
+            session: "work".into(),
+            window_index: 0,
+            window_name: "main".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%10".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 200, height: 50 },
+                    status: PaneStatus::Active,
+                    content: vec![
+                        "$ claude".into(),
+                        "".into(),
+                        "Working on implementing the grid layout...".into(),
+                        "".into(),
+                        "  Thinking...".into(),
+                        "".into(),
+                    ],
+                },
+            ],
+        },
+        // laptop: "work" session, window 1 "scratch" — 4-pane grid (2x2)
+        WindowInfo {
+            id: "@11".into(),
+            host: "laptop".into(),
+            session: "work".into(),
+            window_index: 1,
+            window_name: "scratch".into(),
+            width: 200,
+            height: 50,
+            panes: vec![
+                PaneInfo {
+                    id: "%11".into(),
+                    index: 0,
+                    geometry: PaneGeometry { left: 0, top: 0, width: 99, height: 24 },
+                    status: PaneStatus::Idle,
+                    content: vec![
+                        "$ htop".into(),
+                        "  PID USER   CPU% MEM%".into(),
+                        " 1234 jtanner 2.3 12.5".into(),
+                        " 5678 jtanner 15.7 25.0".into(),
+                        "$ ".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%12".into(),
+                    index: 1,
+                    geometry: PaneGeometry { left: 100, top: 0, width: 100, height: 24 },
+                    status: PaneStatus::Idle,
+                    content: vec![
+                        "$ docker ps".into(),
+                        "CONTAINER   IMAGE       STATUS".into(),
+                        "abc123      postgres    Up 2 days".into(),
+                        "def456      redis       Up 2 days".into(),
+                        "$ ".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%13".into(),
+                    index: 2,
+                    geometry: PaneGeometry { left: 0, top: 25, width: 99, height: 25 },
+                    status: PaneStatus::NeedsAttention,
+                    content: vec![
+                        "$ claude".into(),
+                        "".into(),
+                        "Ready to apply the migration.".into(),
+                        "".into(),
+                        "  Permission to run 'cargo test'? (yes/no)".into(),
+                    ],
+                },
+                PaneInfo {
+                    id: "%14".into(),
+                    index: 3,
+                    geometry: PaneGeometry { left: 100, top: 25, width: 100, height: 25 },
+                    status: PaneStatus::Active,
+                    content: vec![
+                        "$ npm run dev".into(),
+                        "  VITE v5.4.0 ready in 234ms".into(),
+                        "  -> Local: http://localhost:5173/".into(),
+                        "  -> Network: http://192.168.1.50:5173/".into(),
+                    ],
+                },
+            ],
+        },
+    ]
+}

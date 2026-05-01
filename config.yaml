@@ -1,0 +1,24 @@
+hosts:
+  - name: laptop
+    local: true
+  - name: testbox
+    ssh: jtanner@100.127.174.106
+  - name: m720q
+    ssh: jtanner@100.77.121.7
+
+poll_interval_secs: 2
+
+attention_patterns:
+  - "Do you want to"
+  - "Allow"
+  - "yes/no"
+  - "Permission"
+  - "Press enter"
+
+quick_actions:
+  - label: "yes"
+    keys: "yes\n"
+  - label: "y"
+    keys: "y\n"
+  - label: "enter"
+    keys: "\n"
