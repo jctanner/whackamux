@@ -26,6 +26,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "  Do you want to proceed? (y/n)".into(),
                         "".into(),
                     ],
+                    command: "claude".into(),
                 },
             ],
         },
@@ -52,6 +53,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "    Finished release [optimized]".into(),
                         "$ ".into(),
                     ],
+                    command: "cargo".into(),
                 },
                 PaneInfo {
                     id: "%2".into(),
@@ -68,6 +70,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "test result: ok. 12 passed".into(),
                         "$ ".into(),
                     ],
+                    command: "bash".into(),
                 },
             ],
         },
@@ -95,6 +98,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "  Allow claude to edit 2 files? (yes/no)".into(),
                         "".into(),
                     ],
+                    command: "claude".into(),
                 },
                 PaneInfo {
                     id: "%6".into(),
@@ -109,6 +113,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "m0n1o2p docs: update README".into(),
                         "$ ".into(),
                     ],
+                    command: "bash".into(),
                 },
                 PaneInfo {
                     id: "%7".into(),
@@ -121,6 +126,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "".into(),
                         "Every 2s: curl -s localhost:8080/health".into(),
                     ],
+                    command: "watch".into(),
                 },
             ],
         },
@@ -146,6 +152,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "2026-05-01 12:34:05 WARN  slow query: 450ms".into(),
                         "2026-05-01 12:34:06 INFO  request POST /api/auth".into(),
                     ],
+                    command: "tail".into(),
                 },
                 PaneInfo {
                     id: "%9".into(),
@@ -158,6 +165,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "2026-05-01 11:45:12 ERROR timeout: upstream /svc/auth".into(),
                         "".into(),
                     ],
+                    command: "tail".into(),
                 },
             ],
         },
@@ -184,6 +192,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "  Thinking...".into(),
                         "".into(),
                     ],
+                    command: "claude".into(),
                 },
             ],
         },
@@ -209,6 +218,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         " 5678 jtanner 15.7 25.0".into(),
                         "$ ".into(),
                     ],
+                    command: "bash".into(),
                 },
                 PaneInfo {
                     id: "%12".into(),
@@ -222,6 +232,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "def456      redis       Up 2 days".into(),
                         "$ ".into(),
                     ],
+                    command: "bash".into(),
                 },
                 PaneInfo {
                     id: "%13".into(),
@@ -235,6 +246,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "".into(),
                         "  Permission to run 'cargo test'? (yes/no)".into(),
                     ],
+                    command: "claude".into(),
                 },
                 PaneInfo {
                     id: "%14".into(),
@@ -247,6 +259,7 @@ pub fn mock_windows() -> Vec<WindowInfo> {
                         "  -> Local: http://localhost:5173/".into(),
                         "  -> Network: http://192.168.1.50:5173/".into(),
                     ],
+                    command: "npm".into(),
                 },
             ],
         },

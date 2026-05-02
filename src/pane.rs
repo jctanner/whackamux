@@ -44,6 +44,7 @@ pub struct PaneInfo {
     pub geometry: PaneGeometry,
     pub status: PaneStatus,
     pub content: Vec<String>,
+    pub command: String,
 }
 
 impl PaneInfo {

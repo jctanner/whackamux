@@ -863,6 +863,16 @@ fn draw_pane_in_tile(
     let text_left = text_rect.min.x + 2.0;
     let clipped = ui.painter().with_clip_rect(rect);
 
+    if !pane.command.is_empty() {
+        clipped.text(
+            egui::pos2(text_left, rect.min.y + 2.0),
+            egui::Align2::LEFT_TOP,
+            &pane.command,
+            egui::FontId::proportional(8.0),
+            egui::Color32::from_rgb(120, 120, 150),
+        );
+    }
+
     let label_right = rect.max.x - pane_close_size - 6.0;
     if is_focused {
         clipped.text(

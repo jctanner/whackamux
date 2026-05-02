@@ -120,6 +120,7 @@ pub async fn discover_windows(
             },
             status,
             content,
+            command: p.current_command.clone(),
         };
 
         window_map
