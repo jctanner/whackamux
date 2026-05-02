@@ -26,6 +26,7 @@ pub struct App {
     poll_rx: Option<tokio::sync::oneshot::Receiver<PollResult>>,
     poll_in_flight: bool,
     hidden_windows: std::collections::HashSet<String>,
+    hidden_panes: std::collections::HashSet<String>,
     tmux_prefix_pending: bool,
     pane_refresh_rx: Vec<tokio::sync::oneshot::Receiver<(String, Vec<String>)>>,
 }
@@ -83,6 +84,7 @@ impl App {
             poll_rx: None,
             poll_in_flight: false,
             hidden_windows: std::collections::HashSet::new(),
+            hidden_panes: std::collections::HashSet::new(),
             tmux_prefix_pending: false,
             pane_refresh_rx: Vec::new(),
         }
@@ -371,10 +373,12 @@ impl eframe::App for App {
                     self.show_only_attention = !self.show_only_attention;
                 }
 
-                if !self.hidden_windows.is_empty() {
-                    let unhide_label = format!("{} hidden", self.hidden_windows.len());
+                let total_hidden = self.hidden_windows.len() + self.hidden_panes.len();
+                if total_hidden > 0 {
+                    let unhide_label = format!("{} hidden", total_hidden);
                     if ui.button(&unhide_label).clicked() {
                         self.hidden_windows.clear();
+                        self.hidden_panes.clear();
                     }
                 }
 
@@ -426,7 +430,8 @@ impl eframe::App for App {
             let tile_height = (available.y - spacing * (rows as f32 + 1.0)) / rows as f32;
 
             let mut pending_actions: Vec<(String, String)> = Vec::new();
-            let mut hide_requests: Vec<String> = Vec::new();
+            let mut hide_window_requests: Vec<String> = Vec::new();
+            let mut hide_pane_requests: Vec<String> = Vec::new();
 
             egui::ScrollArea::vertical().show(ui, |ui| {
                 egui::Grid::new("window_grid")
@@ -442,7 +447,9 @@ impl eframe::App for App {
                                 &self.quick_actions,
                                 &mut self.focused_pane,
                                 &mut pending_actions,
-                                &mut hide_requests,
+                                &mut hide_window_requests,
+                                &self.hidden_panes,
+                                &mut hide_pane_requests,
                             );
                             if (i + 1) % cols == 0 {
                                 ui.end_row();
@@ -451,8 +458,11 @@ impl eframe::App for App {
                     });
             });
 
-            for key in hide_requests {
+            for key in hide_window_requests {
                 self.hidden_windows.insert(key);
+            }
+            for key in hide_pane_requests {
+                self.hidden_panes.insert(key);
             }
 
             for (pane_key, keys) in pending_actions {
@@ -661,7 +671,9 @@ fn draw_window_tile(
     quick_actions: &[QuickAction],
     focused_pane: &mut Option<String>,
     pending_actions: &mut Vec<(String, String)>,
-    hide_requests: &mut Vec<String>,
+    hide_window_requests: &mut Vec<String>,
+    hidden_panes: &std::collections::HashSet<String>,
+    hide_pane_requests: &mut Vec<String>,
 ) {
     let header_height = 20.0;
     let border_status = window.worst_status();
@@ -720,7 +732,7 @@ fn draw_window_tile(
         close_color,
     );
     if close_response.clicked() {
-        hide_requests.push(make_pane_key(&window.host, &window.id));
+        hide_window_requests.push(make_pane_key(&window.host, &window.id));
     }
 
     if window.panes.len() > 1 {
@@ -739,24 +751,39 @@ fn draw_window_tile(
         egui::pos2(rect.max.x - 1.0, rect.max.y - 1.0),
     );
 
+    let visible_panes: Vec<&PaneInfo> = window
+        .panes
+        .iter()
+        .filter(|p| !hidden_panes.contains(&make_pane_key(&window.host, &p.id)))
+        .collect();
+
     let win_w = window.width as f32;
     let win_h = window.height as f32;
+    let use_original_layout = visible_panes.len() == window.panes.len();
 
-    for pane in &window.panes {
-        let px = pane.geometry.left as f32 / win_w;
-        let py = pane.geometry.top as f32 / win_h;
-        let pw = pane.geometry.width as f32 / win_w;
-        let ph = pane.geometry.height as f32 / win_h;
+    for (i, pane) in visible_panes.iter().enumerate() {
+        let pane_rect = if use_original_layout {
+            let px = pane.geometry.left as f32 / win_w;
+            let py = pane.geometry.top as f32 / win_h;
+            let pw = pane.geometry.width as f32 / win_w;
+            let ph = pane.geometry.height as f32 / win_h;
+            egui::Rect::from_min_size(
+                egui::pos2(
+                    content_rect.min.x + px * content_rect.width(),
+                    content_rect.min.y + py * content_rect.height(),
+                ),
+                egui::vec2(pw * content_rect.width(), ph * content_rect.height()),
+            )
+        } else {
+            let n = visible_panes.len() as f32;
+            let pane_w = content_rect.width() / n;
+            egui::Rect::from_min_size(
+                egui::pos2(content_rect.min.x + i as f32 * pane_w, content_rect.min.y),
+                egui::vec2(pane_w, content_rect.height()),
+            )
+        };
 
-        let pane_rect = egui::Rect::from_min_size(
-            egui::pos2(
-                content_rect.min.x + px * content_rect.width(),
-                content_rect.min.y + py * content_rect.height(),
-            ),
-            egui::vec2(pw * content_rect.width(), ph * content_rect.height()),
-        );
-
-        draw_pane_in_tile(ui, pane, pane_rect, &window.host, quick_actions, focused_pane, pending_actions);
+        draw_pane_in_tile(ui, pane, pane_rect, &window.host, quick_actions, focused_pane, pending_actions, hide_pane_requests);
     }
 }
 
@@ -768,6 +795,7 @@ fn draw_pane_in_tile(
     quick_actions: &[QuickAction],
     focused_pane: &mut Option<String>,
     pending_actions: &mut Vec<(String, String)>,
+    hide_pane_requests: &mut Vec<String>,
 ) {
     let pane_key = make_pane_key(host, &pane.id);
     let is_focused = focused_pane.as_ref() == Some(&pane_key);
@@ -808,13 +836,37 @@ fn draw_pane_in_tile(
         };
     }
 
+    let pane_close_size = 10.0;
+    let pane_close_rect = egui::Rect::from_min_size(
+        egui::pos2(rect.max.x - pane_close_size - 2.0, rect.min.y + 2.0),
+        egui::vec2(pane_close_size, pane_close_size),
+    );
+    let pane_close_id = egui::Id::new(&pane_key).with("pane_close");
+    let pane_close_response = ui.interact(pane_close_rect, pane_close_id, egui::Sense::click());
+    let pane_close_color = if pane_close_response.hovered() {
+        egui::Color32::from_rgb(220, 80, 80)
+    } else {
+        egui::Color32::from_rgb(80, 80, 100)
+    };
+    ui.painter().text(
+        pane_close_rect.center(),
+        egui::Align2::CENTER_CENTER,
+        "x",
+        egui::FontId::proportional(8.0),
+        pane_close_color,
+    );
+    if pane_close_response.clicked() {
+        hide_pane_requests.push(pane_key.clone());
+    }
+
     let text_rect = rect.shrink2(egui::vec2(indicator_width + 4.0, 2.0));
     let text_left = text_rect.min.x + 2.0;
     let clipped = ui.painter().with_clip_rect(rect);
 
+    let label_right = rect.max.x - pane_close_size - 6.0;
     if is_focused {
         clipped.text(
-            egui::pos2(rect.max.x - 4.0, rect.min.y + 2.0),
+            egui::pos2(label_right, rect.min.y + 2.0),
             egui::Align2::RIGHT_TOP,
             "INPUT",
             egui::FontId::proportional(8.0),
@@ -822,7 +874,7 @@ fn draw_pane_in_tile(
         );
     } else if pane.status == PaneStatus::NeedsAttention {
         clipped.text(
-            egui::pos2(rect.max.x - 4.0, rect.min.y + 2.0),
+            egui::pos2(label_right, rect.min.y + 2.0),
             egui::Align2::RIGHT_TOP,
             pane.status.label(),
             egui::FontId::proportional(8.0),
