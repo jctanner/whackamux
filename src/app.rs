@@ -27,6 +27,7 @@ pub struct App {
     poll_in_flight: bool,
     hidden_windows: std::collections::HashSet<String>,
     tmux_prefix_pending: bool,
+    pane_refresh_rx: Vec<tokio::sync::oneshot::Receiver<(String, Vec<String>)>>,
 }
 
 impl App {
@@ -83,6 +84,7 @@ impl App {
             poll_in_flight: false,
             hidden_windows: std::collections::HashSet::new(),
             tmux_prefix_pending: false,
+            pane_refresh_rx: Vec::new(),
         }
     }
 
@@ -227,6 +229,39 @@ impl App {
         });
     }
 
+    fn refresh_pane(&mut self, pane_key: &str) {
+        if let Some((runner, pane_id)) = self.runner_for_pane(pane_key) {
+            let (tx, rx) = tokio::sync::oneshot::channel();
+            let pid = pane_id.clone();
+            self.runtime.spawn(async move {
+                if let Ok(content) = tmux::capture_pane(&runner, &pid).await {
+                    let _ = tx.send((pid, content));
+                }
+            });
+            self.pane_refresh_rx.push(rx);
+        }
+    }
+
+    fn check_pane_refreshes(&mut self) {
+        self.pane_refresh_rx.retain_mut(|rx| {
+            match rx.try_recv() {
+                Ok((pane_id, content)) => {
+                    for window in &mut self.windows {
+                        for pane in &mut window.panes {
+                            if pane.id == pane_id {
+                                pane.content = content;
+                                return false;
+                            }
+                        }
+                    }
+                    false
+                }
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty) => true,
+                Err(_) => false,
+            }
+        });
+    }
+
     fn check_poll_results(&mut self) {
         if let Some(mut rx) = self.poll_rx.take() {
             match rx.try_recv() {
@@ -272,8 +307,9 @@ fn parse_ssh_spec(spec: &str) -> (String, String) {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Check for completed background poll
+        // Check for completed background poll and pane refreshes
         self.check_poll_results();
+        self.check_pane_refreshes();
 
         // Start a new poll if interval has elapsed and none in flight
         if self.last_poll.elapsed() >= self.poll_interval && !self.poll_in_flight {
@@ -281,7 +317,11 @@ impl eframe::App for App {
             self.start_poll();
         }
 
-        ctx.request_repaint_after(Duration::from_millis(100));
+        if self.focused_pane.is_some() {
+            ctx.request_repaint();
+        } else {
+            ctx.request_repaint_after(Duration::from_millis(100));
+        }
 
         egui::TopBottomPanel::top("toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
@@ -512,7 +552,7 @@ impl eframe::App for App {
                 }
 
                 if sent_input {
-                    self.last_poll = Instant::now() - self.poll_interval - Duration::from_millis(1);
+                    self.refresh_pane(pane_key);
                 }
             }
         }

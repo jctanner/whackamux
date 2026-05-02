@@ -163,7 +163,7 @@ pub async fn discover_windows(
     Ok(windows)
 }
 
-async fn capture_pane(runner: &TmuxRunner, pane_id: &str) -> anyhow::Result<Vec<String>> {
+pub async fn capture_pane(runner: &TmuxRunner, pane_id: &str) -> anyhow::Result<Vec<String>> {
     let stdout = runner.run(&["capture-pane", "-t", pane_id, "-p"]).await?;
     let lines: Vec<String> = stdout.lines().map(|l| l.to_string()).collect();
     let last_non_empty = lines.iter().rposition(|l| !l.is_empty()).unwrap_or(0);
